@@ -306,7 +306,7 @@ Plot annual percentage by stage
 
 annual <- data5yr |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
-  dplyr::mutate(Time = as.numeric(EST_YEAR)) |>
+  dplyr::mutate(Time = as.numeric(as.character(EST_YEAR))) |>
   dplyr::select(SEASON, STOCK, Time, 
                 Developing = PROPD, 
                 Ripe = PROPR, 
@@ -336,20 +336,6 @@ p
 Which stages are increasing or decreasing in proportion?
 
 ```{r}
-annual <- data5yr |> 
-  dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
-  dplyr::mutate(Time = as.numeric(EST_YEAR)) |>
-  dplyr::select(SEASON, STOCK, Time, 
-                Developing = PROPD, 
-                Ripe = PROPR, 
-                Spent = PROPS, 
-                Resting = PROPT) |>
-  tidyr::pivot_longer(Developing:Resting, names_to = "Stage", values_to = "Value") 
-
-mat.col=c("orange", "cyan", "purple", "coral3")
-names(mat.col) <- as.factor(c("Developing", "Ripe", "Spent", "Resting"))
-
-
 
 p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Developing")), 
                      ggplot2::aes(x=Time, y=Value, color = Stage)) + # , colour = Stage
@@ -407,9 +393,9 @@ p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Spent")),
 
 p
 ```
-Plot time block and temp bin percentage by stage
+Plot time block and temp bin percentage by stage (not evaluated)
 
-```{r}
+```{r, eval=FALSE}
 decadal <- data5 |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
   dplyr::mutate(Time = YEARBLOCK) |>
@@ -432,7 +418,7 @@ Plot temperatures, bottom temp from survey stations with maturity samples increa
 ```{r}
 annual <- data5yr |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
-  dplyr::mutate(Time = as.numeric(EST_YEAR)) |>
+  dplyr::mutate(Time = as.numeric(as.character(EST_YEAR))) |>
   dplyr::select(SEASON, STOCK, Time, meanTEMP) 
 
 p <- ggplot2::ggplot(annual, 
@@ -451,7 +437,7 @@ Day of year, not changing over time aside from GB spring
 ```{r}
 annual <- data5yr |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
-  dplyr::mutate(Time = as.numeric(EST_YEAR)) |>
+  dplyr::mutate(Time = as.numeric(as.character(EST_YEAR))) |>
   dplyr::select(SEASON, STOCK, Time, meanJDAY)
 
 p <- ggplot2::ggplot(annual, 
