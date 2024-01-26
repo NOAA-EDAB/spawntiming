@@ -1,0 +1,29 @@
+---
+title: "Mark's Spawn Timing"
+author: "Sarah Gaichas"
+date: "2024-01-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Mark Wuenschel provided the data and code to produce the figures from working papers on spawning phenology of haddock and yellowtail flounder stocks.
+
+Mark's input data and code are in this repo.
+
+I just ran Mark's code and will save them as rds files for input into ecodata.
+
+## Yellowtail
+
+Input data: [`YT_63_23_BTS.csv`]()
+
+Processing code: [`YT_Prop_Mat_by_temp_week_timeblocks_CC_WP.R`]()
+
+I ran the code from lines 1:219 to get the datasets. 
+
+Data for percent by spawning stage along with bottom temperature and day of sampling are in `data5`
+
+
+
