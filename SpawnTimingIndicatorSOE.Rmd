@@ -9,6 +9,9 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(MASS)
+library(reshape2)
 ```
 
 Mark Wuenschel provided the data and code to produce the figures from working papers on spawning phenology of haddock and yellowtail flounder stocks.
@@ -117,7 +120,7 @@ data$PROPSPAWN <- NA
 data$EST_YEAR <- as.factor(data$EST_YEAR)
 data$STOCK <- as.factor(data$STOCK)
 #library(plyr); 
-library(dplyr)
+#library(dplyr)
 # results.by.year.season.stock <- ddply(.data=data, .var=C(data$EST_YEAR,data$SEASON, data$STOCK), .fun=function(x) {
 #   data.frame(n=nrow(x),
 #              num_prespawn = nrow(subset(x, data$SPAWNCOND %in%
@@ -148,7 +151,7 @@ data3<- data2 %>%
             )
 
 ###this part tallies by spawn condition and adds colums for each, so there is one row per yearxseasonxstock
-library(reshape2)
+#library(reshape2)
 data3<-dcast(data3,EST_YEAR+SEASON+STOCK~ SPAWNCOND, value.var="totalMF")
   
 
@@ -201,7 +204,7 @@ data5$DURATION <-data5$maxJDAY-data5$minJDAY
 
 Haddock is already by year, plot:
 ```{r}
-annual <- data5 |> 
+annualhad <- data5 |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
   dplyr::mutate(Time = as.numeric(EST_YEAR)) |>
   dplyr::select(SEASON, STOCK, Time, 
@@ -216,7 +219,7 @@ names(mat.col) <- as.factor(c("Developing", "Ripe", "Spent", "Resting"))
 
 
 
-p <- ggplot2::ggplot(annual, 
+p <- ggplot2::ggplot(annualhad, 
                      ggplot2::aes(x=Time, y=Value, fill = as.factor(Stage))) + # , colour = Stage
   #ggplot2::geom_point() +
   #ggplot2::geom_line() +
@@ -234,7 +237,7 @@ Which stages are increasing or decreasing in proportion?
 
 ```{r}
 
-p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Developing")), 
+p <- ggplot2::ggplot(annualhad |> dplyr::filter(Stage %in% c("Developing")), 
                      ggplot2::aes(x=Time, y=Value, color = Stage)) + # , colour = Stage
   ggplot2::geom_point() +
   #ggplot2::geom_line() +
@@ -250,7 +253,7 @@ p
 
 ```{r}
 
-p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Resting")), 
+p <- ggplot2::ggplot(annualhad |> dplyr::filter(Stage %in% c("Resting")), 
                      ggplot2::aes(x=Time, y=Value, color = Stage)) + # , colour = Stage
   ggplot2::geom_point() +
   #ggplot2::geom_line() +
@@ -266,7 +269,7 @@ p
 
 ```{r}
 
-p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Ripe")), 
+p <- ggplot2::ggplot(annualhad |> dplyr::filter(Stage %in% c("Ripe")), 
                      ggplot2::aes(x=Time, y=Value, color = Stage)) + # , colour = Stage
   ggplot2::geom_point() +
   #ggplot2::geom_line() +
@@ -282,7 +285,7 @@ p
 
 ```{r}
 
-p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Spent")), 
+p <- ggplot2::ggplot(annualhad |> dplyr::filter(Stage %in% c("Spent")), 
                      ggplot2::aes(x=Time, y=Value, color = Stage)) + # , colour = Stage
   ggplot2::geom_point() +
   #ggplot2::geom_line() +
@@ -299,12 +302,12 @@ p
 Plot temperatures, bottom temp from survey stations with maturity samples increasing in GB Spring, GOM Fall
 
 ```{r}
-annual <- data5 |> 
+annualhadtemp <- data5 |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
   dplyr::mutate(Time = as.numeric(EST_YEAR)) |>
   dplyr::select(SEASON, STOCK, Time, meanTEMP) 
 
-p <- ggplot2::ggplot(annual, 
+p <- ggplot2::ggplot(annualhadtemp, 
                      ggplot2::aes(x=Time, y=meanTEMP)) + # , colour = Stage
   ggplot2::geom_point() +
   ggplot2::geom_line() +
@@ -319,12 +322,12 @@ p
 Mean surveyed day of year, not changing over time
 
 ```{r}
-annual <- data5 |> 
+annualhadday <- data5 |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
   dplyr::mutate(Time = as.numeric(EST_YEAR)) |>
   dplyr::select(SEASON, STOCK, Time, meanJDAY)
 
-p <- ggplot2::ggplot(annual, 
+p <- ggplot2::ggplot(annualhadday, 
                      ggplot2::aes(x=Time, y=meanJDAY, color = SEASON)) + # , colour = Stage
   ggplot2::geom_point() +
   ggplot2::geom_line() +
@@ -335,6 +338,14 @@ p <- ggplot2::ggplot(annual,
 
 p
 ```
+
+```{r}
+haddock <- left_join(annualhad, annualhadtemp) |>
+  left_join(annualhadday)
+
+haddock$Species <- "Haddock"
+```
+
 
 ## Yellowtail
 
@@ -361,11 +372,11 @@ I ran the code from lines 1:219 to get the datasets.
 ####condense proportions maturity by temp and Day of year
 # last modified 10/10/2018
 
-rm(list=ls(all=TRUE))  # clear the workspace of all existing variables
+#rm(list=ls(all=TRUE))  # clear the workspace of all existing variables
 #setwd("C:\\R\\Spawning_Phenology") # set the path for the working directory
 #od= 'C:/R/Spawning_Phenology/output/'   #directory for writing output
 
-library(MASS)
+#library(MASS)
 
 YTdata=as.data.frame(read.csv(file="YT_63_23_BTS.csv", header=T, sep=","))
 #Allspp_SPdata$mean[which(Allspp_SPdata$mean==0)] <- NA
@@ -464,7 +475,7 @@ data2<- data[!is.na(data$STOCK), ]
 ####cleaning up the data a little#####
 ###may need to remove some small fish that are listed as mature (<20 cm) seems unlikely. 
 #library(plyr); 
-library(dplyr)
+#library(dplyr)
 # results.by.year.season.stock <- ddply(.data=data, .var=C(data$EST_YEAR,data$SEASON, data$STOCK), .fun=function(x) {
 #   data.frame(n=nrow(x),
 #              num_prespawn = nrow(subset(x, data$SPAWNCOND %in%
@@ -496,7 +507,7 @@ data3<- data2 %>%
 
 
 ###this part tallies by spawn condition and adds colums for each, so there is one row per yearxseasonxstock
-library(reshape2)
+#library(reshape2)
 data3<-dcast(data3,SEASON+STOCK+TEMPBIN+YEARBLOCK~ MATURITY, value.var="totalMF")
 
 
@@ -544,7 +555,7 @@ WOYdata3<- data2 %>%
 
 
 ###this part tallies by spawn condition and adds colums for each, so there is one row per yearxseasonxstock
-library(reshape2)
+#library(reshape2)
 WOYdata3<-dcast(WOYdata3,SEASON+STOCK+WOY+YEARBLOCK~ MATURITY, value.var="totalMF")
 
 
@@ -634,7 +645,7 @@ Plot annual percentage by stage
 
 ```{r}
 
-annual <- data5yr |> 
+annualyt <- data5yr |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
   dplyr::mutate(Time = as.numeric(as.character(EST_YEAR))) |>
   dplyr::select(SEASON, STOCK, Time, 
@@ -649,7 +660,7 @@ names(mat.col) <- as.factor(c("Developing", "Ripe", "Spent", "Resting"))
 
 
 
-p <- ggplot2::ggplot(annual, 
+p <- ggplot2::ggplot(annualyt, 
                      ggplot2::aes(x=Time, y=Value, fill = as.factor(Stage))) + # , colour = Stage
   #ggplot2::geom_point() +
   #ggplot2::geom_line() +
@@ -667,7 +678,7 @@ Which stages are increasing or decreasing in proportion?
 
 ```{r}
 
-p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Developing")), 
+p <- ggplot2::ggplot(annualyt |> dplyr::filter(Stage %in% c("Developing")), 
                      ggplot2::aes(x=Time, y=Value, color = Stage)) + # , colour = Stage
   ggplot2::geom_point() +
   #ggplot2::geom_line() +
@@ -681,7 +692,7 @@ p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Developing")),
 p
 ```
 ```{r}
-p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Resting")), 
+p <- ggplot2::ggplot(annualyt |> dplyr::filter(Stage %in% c("Resting")), 
                      ggplot2::aes(x=Time, y=Value, color = Stage)) + # , colour = Stage
   ggplot2::geom_point() +
   #ggplot2::geom_line() +
@@ -695,7 +706,7 @@ p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Resting")),
 p
 ```
 ```{r}
-p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Ripe")), 
+p <- ggplot2::ggplot(annualyt |> dplyr::filter(Stage %in% c("Ripe")), 
                      ggplot2::aes(x=Time, y=Value, color = Stage)) + # , colour = Stage
   ggplot2::geom_point() +
   #ggplot2::geom_line() +
@@ -710,7 +721,7 @@ p
 ```
 
 ```{r}
-p <- ggplot2::ggplot(annual |> dplyr::filter(Stage %in% c("Spent")), 
+p <- ggplot2::ggplot(annualyt |> dplyr::filter(Stage %in% c("Spent")), 
                      ggplot2::aes(x=Time, y=Value, color = Stage)) + # , colour = Stage
   ggplot2::geom_point() +
   #ggplot2::geom_line() +
@@ -746,12 +757,12 @@ p
 Plot temperatures, bottom temp from survey stations with maturity samples increasing in all but SNE Spring
 
 ```{r}
-annual <- data5yr |> 
+annualyttemp <- data5yr |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
   dplyr::mutate(Time = as.numeric(as.character(EST_YEAR))) |>
   dplyr::select(SEASON, STOCK, Time, meanTEMP) 
 
-p <- ggplot2::ggplot(annual, 
+p <- ggplot2::ggplot(annualyttemp, 
                      ggplot2::aes(x=Time, y=meanTEMP)) + # , colour = Stage
   ggplot2::geom_point() +
   ggplot2::geom_line() +
@@ -765,12 +776,12 @@ p
 Day of year, not changing over time aside from GB spring
 
 ```{r}
-annual <- data5yr |> 
+annualytday <- data5yr |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
   dplyr::mutate(Time = as.numeric(as.character(EST_YEAR))) |>
   dplyr::select(SEASON, STOCK, Time, meanJDAY)
 
-p <- ggplot2::ggplot(annual, 
+p <- ggplot2::ggplot(annualytday, 
                      ggplot2::aes(x=Time, y=meanJDAY, color = SEASON)) + # , colour = Stage
   ggplot2::geom_point() +
   ggplot2::geom_line() +
@@ -782,3 +793,93 @@ p <- ggplot2::ggplot(annual,
 p
 ```
 
+```{r}
+yellowtail <- left_join(annualyt, annualyttemp) |>
+  left_join(annualytday)
+
+yellowtail$Species <- "Yellowtail"
+```
+## Combined datastet
+
+```{r}
+
+spawntime <- dplyr::bind_rows(haddock, yellowtail)
+
+p <- spawntime |>
+  dplyr::filter(SEASON == "SPRING") |>
+  ggplot2::ggplot(ggplot2::aes(x=Time, y=Value, fill = as.factor(Stage))) + # , colour = Stage
+  #ggplot2::geom_point() +
+  #ggplot2::geom_line() +
+  #ecodata::geom_gls() +
+  ggplot2::geom_bar(stat="identity", position="fill") +
+  ggplot2::scale_fill_manual(values = mat.col) +
+  ggplot2::facet_wrap(Species~STOCK) + 
+  ecodata::theme_facet() +
+  ggplot2::ggtitle("Spawning stage proportions")
+
+g <- ggplot2::ggplotGrob(p)
+
+gl <- g$layout
+idcol <- gl$r == (ncol(g)-2)
+g$layout[idcol & gl$b < 5, c("t", "b")] <- gl[idcol & gl$b < 5, c("t", "b")] + 4
+grid::grid.newpage()
+grid::grid.draw(g)
+  
+
+```
+```{r}
+p <- spawntime |>
+  dplyr::filter(SEASON == "SPRING",
+                Stage %in% c("Resting")) |>
+  ggplot2::ggplot(ggplot2::aes(x=Time, y=Value, color = Stage)) + # , colour = Stage
+  ggplot2::geom_point() +
+  #ggplot2::geom_line() +
+  ecodata::geom_gls() +
+  #ggplot2::geom_bar(stat="identity", position="fill") +
+  #ggplot2::scale_fill_manual(values = mat.col) +
+  ggplot2::facet_wrap(Species~STOCK) + 
+  ecodata::theme_facet() +
+  ggplot2::ggtitle("Spring Spawning Stage")
+
+p
+
+# g <- ggplot2::ggplotGrob(p)
+# 
+# gl <- g$layout
+# idcol <- gl$r == (ncol(g)-2)
+# g$layout[idcol & gl$b < 5, c("t", "b")] <- gl[idcol & gl$b < 5, c("t", "b")] + 4
+# grid::grid.newpage()
+# grid::grid.draw(g)
+```
+```{r}
+
+p <- spawntime |>
+  dplyr::filter(SEASON == "SPRING") |> 
+  dplyr::select(-c(Stage, Value)) |>
+  dplyr::distinct() |>
+  ggplot2::ggplot(ggplot2::aes(x=Time, y=meanTEMP)) + # , colour = Stage
+  ggplot2::geom_point() +
+  ggplot2::geom_line() +
+  ecodata::geom_gls() +
+  ggplot2::facet_wrap(Species~STOCK) + 
+  ecodata::theme_facet() +
+  ggplot2::ggtitle("Mean sampled bottom temperature")
+
+p
+```
+```{r}
+
+p <- spawntime |>
+  dplyr::filter(SEASON == "SPRING") |> 
+  dplyr::select(-c(Stage, Value)) |>
+  dplyr::distinct() |>
+  ggplot2::ggplot(ggplot2::aes(x=Time, y=meanJDAY)) + # , colour = Stage
+  ggplot2::geom_point() +
+  ggplot2::geom_line() +
+  ecodata::geom_gls() +
+  ggplot2::facet_wrap(Species~STOCK) + 
+  ecodata::theme_facet() +
+  ggplot2::ggtitle("Mean sampled day of year")
+
+p
+```
