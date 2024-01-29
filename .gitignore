@@ -50,3 +50,5 @@ rsconnect/
 
 # Mac stuff
 .DS_Store
+
+*.pdf
