@@ -1,7 +1,7 @@
 ---
 title: "Mark's Spawn Timing"
 author: "Sarah Gaichas"
-date: "2024-01-26"
+date: "2024-01-30"
 output:
   html_document: 
     code_fold: hide
@@ -305,7 +305,7 @@ Plot temperatures, bottom temp from survey stations with maturity samples increa
 annualhadtemp <- data5 |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
   dplyr::mutate(Time = as.numeric(EST_YEAR)) |>
-  dplyr::select(SEASON, STOCK, Time, meanTEMP) 
+  dplyr::select(SEASON, STOCK, Time, meanTEMP, MF) # adds number of mature females
 
 p <- ggplot2::ggplot(annualhadtemp, 
                      ggplot2::aes(x=Time, y=meanTEMP)) + # , colour = Stage
@@ -760,7 +760,7 @@ Plot temperatures, bottom temp from survey stations with maturity samples increa
 annualyttemp <- data5yr |> 
   dplyr::filter(SEASON %in% c("SPRING", "FALL")) |>
   dplyr::mutate(Time = as.numeric(as.character(EST_YEAR))) |>
-  dplyr::select(SEASON, STOCK, Time, meanTEMP) 
+  dplyr::select(SEASON, STOCK, Time, meanTEMP, MF) # adds number of mature females) 
 
 p <- ggplot2::ggplot(annualyttemp, 
                      ggplot2::aes(x=Time, y=meanTEMP)) + # , colour = Stage
@@ -827,6 +827,27 @@ grid::grid.draw(g)
   
 
 ```
+N mature females
+
+```{r}
+p <- spawntime |>
+  dplyr::filter(SEASON == "SPRING") |>
+  dplyr::select(-c(Stage, Value)) |>
+  dplyr::distinct() |>
+  ggplot2::ggplot(ggplot2::aes(x=Time, y=MF)) + # , colour = Stage
+  ggplot2::geom_point() +
+  ggplot2::geom_line() +
+  ecodata::geom_gls() +
+  #ggplot2::geom_bar(stat="identity", position="fill") +
+  #ggplot2::scale_fill_manual(values = mat.col) +
+  ggplot2::facet_wrap(Species~STOCK) + 
+  ecodata::theme_facet() +
+  ggplot2::ggtitle("Number of mature females sampled")
+
+p
+```
+
+
 ```{r}
 p <- spawntime |>
   dplyr::filter(SEASON == "SPRING",
@@ -883,3 +904,156 @@ p <- spawntime |>
 
 p
 ```
+
+## Dataset for ecodata
+
+This code takes `spawntime` dataset above and formats for `ecodata`. Also makes `get` and `plot` functions.
+
+Variable names and units:
+
+Variable names follow the convention "SEASON_Species_STOCK_Variable" where Variable and Units are:
+meanTEMP: mean sampled bottom temperature in degrees C
+MF: number of mature females sampled
+meanJDAY: mean julian day of year sampled
+Developing: percent of mature females at developing (pre-spawning) stage
+Ripe: percent of mature females at ripe (spawning) stage
+Spent: percent of mature females at spent (immediately post-spawning) stage
+Resting: percent of mature females at resting (non-spawning) stage
+
+
+```{r}
+
+# Mark suggested adding number of mature females
+
+spawn_timing <- spawntime |>
+  # Var is SEASON Species STOCK MatStage or SEASON Species STOCK meanTemp or SEASON Species STOCK meanJDAY
+  tidyr::unite("Var", c(SEASON, Species, STOCK), sep = "_") |>
+  tidyr::pivot_wider(names_from = "Stage", values_from = "Value") |>
+  tidyr::pivot_longer(meanTEMP:Resting, names_to = "Var2", values_to = "Value") |>
+  dplyr::mutate(Units = dplyr::case_when(Var2 == "meanTEMP" ~ "bottom temperature degrees C",
+                                         Var2 == "meanJDAY" ~ "julian day",
+                                         Var2 == "MF" ~ "number of mature females sampled",
+                                         TRUE ~ "percent of mature females at stage"),
+                EPU = NA) |>
+  tidyr::unite("Var", c(Var, Var2)) |>
+  dplyr::select(Time, Var, Value, EPU, Units)
+
+saveRDS(spawn_timing, here::here("spawn_timing.rds"))
+```
+
+get function for ecodata
+
+```{r, eval=FALSE}
+## Spawn timing
+raw.dir<- here::here("data-raw/")
+sptime <- readRDS(file.path(raw.dir, fal))
+
+get_spawn_timing <- function(save_clean = F){
+
+  spawn_timing<- readRDS(file.path(raw.dir, sptime))
+
+  if (save_clean){
+    usethis::use_data(spawn_timing, overwrite = T)
+  } else {
+    return(spawn_timing)
+  }
+}
+get_spawn_timing(save_clean = T)
+```
+
+plot function for ecodata
+
+```{r, eval=FALSE}
+#' plot spawn_timing
+#'
+#' Plots time series of maturity stage and associated data for available stocks
+#'
+#' @param shadedRegion Numeric vector. Years denoting the shaded region of the plot (most recent 10)
+#' @param report Character string. Which SOE report ("MidAtlantic", "NewEngland")
+#' @param varName Character string. Which variable to plot: 
+#' maturity stage ("Resting", "Ripe", "Spent", "Developing"),
+#' number of mature females ("MF"), 
+#' mean sampled bottom temperature ("meanTEMP"), 
+#' or mean sampled day of year ("meanJDAY")
+#'
+#' @return ggplot object
+#'
+#'
+#' @export
+#'
+
+plot_spawn_timing <- function(shadedRegion = NULL,
+                              report="MidAtlantic",
+                              varName = "Resting") {
+  
+  # generate plot setup list (same for all plot functions)
+  setup <- ecodata::plot_setup(shadedRegion = shadedRegion,
+                               report=report)
+  
+  # which report? this may be bypassed for some figures
+  # dataset has NA EPU field but may be added later, so keep this here
+  # NOTE no filtering by EPU happens below, change later!
+  
+  if (report == "MidAtlantic") {
+    filterEPUs <- c("MAB")
+  } else {
+    filterEPUs <- c("GB", "GOM")
+  }
+  
+  # optional code to wrangle ecodata object prior to plotting
+  # e.g., calculate mean, max or other needed values to join below
+  fix<- ecodata::spawn_timing |>
+    tidyr::separate(Var, into = c("Season", "Species", "Stock", "Var"), sep = "_") 
+  
+  # code for generating plot object p
+  # ensure that setup list objects are called as setup$...
+  # e.g. fill = setup$shade.fill, alpha = setup$shade.alpha,
+  # xmin = setup$x.shade.min , xmax = setup$x.shade.max
+  #
+  
+  # SPRING data plots by default for spring spawning species
+  # May have to change to add fall option later if we get fall spawners
+  
+  
+  filt <- fix |>
+    dplyr::filter(Season == "SPRING",
+                  Var == varName) |>
+    dplyr::mutate(Species = factor(Species, levels = c("Yellowtail", "Haddock")),
+                  Stock = factor(Stock, levels = c("GOM", "CC", "GB", "SNE")))
+  
+  p <- ggplot2::ggplot(filt, ggplot2::aes(x = Time, y = Value)) +
+    ggplot2::annotate("rect", fill = setup$shade.fill, alpha = setup$shade.alpha,
+                      xmin = setup$x.shade.min , xmax = setup$x.shade.max,
+                      ymin = -Inf, ymax = Inf) +
+    ggplot2::geom_point() +
+    ggplot2::geom_line() +
+    ecodata::geom_gls() +
+    #ggplot2::geom_bar(stat="identity", position="fill") +
+    #ggplot2::scale_fill_manual(values = mat.col) +
+    ggplot2::ylab(filt$Units) +
+    ggplot2::facet_wrap(Species~Stock,
+                        labeller = ggplot2::label_wrap_gen(multi_line=FALSE)) + 
+    ecodata::theme_facet() + 
+    ecodata::theme_title()    
+  
+  if(varName %in% c("Resting", "Ripe", "Spent", "Developing")){
+    p <- p + ggplot2::ggtitle(paste(stringr::str_to_sentence(filt$Season), varName, "Spawning Stage")) 
+  }
+  
+  if(varName %in% c("MF", "meanTEMP", "meanJDAY")){
+    varLong <- dplyr::case_when(varName == "MF" ~ "Mature Females",
+                                varName == "meanTEMP" ~ "Mean Sampled Temperature",
+                                varName == "meanJDAY" ~ "Mean Sampling Date")
+    
+    p <-p + ggplot2::ggtitle(paste(stringr::str_to_sentence(filt$Season), varLong))
+  }
+  
+  return(p)
+  
+}
+attr(plot_forage_index,"report") <- c("MidAtlantic","NewEngland")
+attr(plot_forage_index, "varName") <- c("Resting", "Ripe", "Spent", "Developing", "MF", "meanTEMP", "meanJDAY")
+
+
+```
+
