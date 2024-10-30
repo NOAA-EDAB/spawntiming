@@ -1,7 +1,7 @@
 ---
 title: "Mark's Spawn Timing"
 author: "Sarah Gaichas"
-date: "2024-01-30"
+date: "`r Sys.Date()`"
 output:
   html_document: 
     code_fold: hide
@@ -13,6 +13,8 @@ library(dplyr)
 library(MASS)
 library(reshape2)
 ```
+
+# Updated with data through 2024, Oct 2024
 
 Mark Wuenschel provided the data and code to produce the figures from working papers on spawning phenology of haddock and yellowtail flounder stocks.
 
@@ -31,7 +33,9 @@ decade (2010s) as compared to earlier in the time series. Recent spring surveys 
 greater proportion of post spawning fish.
 
 
-Input data: [`haddock_1970_2019_export.csv`](https://github.com/sgaichas/spawntiming/blob/main/haddock_1970_2019_export.csv)
+2023 Input data: [`haddock_1970_2019_export.csv`](https://github.com/sgaichas/spawntiming/blob/main/haddock_1970_2019_export.csv)
+
+2024 Input data: [`haddock_1963_2024_BTS.csv`](https://github.com/sgaichas/spawntiming/blob/main/haddock_1963_2024_BTSt.csv)
 
 Processing code: [`Haddock_spawning_phenology_2021WP.R`](https://github.com/sgaichas/spawntiming/blob/main/Haddock_spawning_phenology_2021WP.R)
 
@@ -52,7 +56,7 @@ rm(list=ls(all=TRUE))  # clear the workspace of all existing variables
 #library(MASS)
 
 
-HADdata=as.data.frame(read.csv(file="haddock_1970_2019_export.csv", header=T, sep=","))
+HADdata=as.data.frame(read.csv(file="haddock_1963_2024_BTS.csv", header=T, sep=","))
 #Allspp_SPdata$mean[which(Allspp_SPdata$mean==0)] <- NA
 data=subset(HADdata[HADdata$SVSPP=='74',]) #select species
 
@@ -360,7 +364,10 @@ spawning season of CC GOM and SNE stocks. Early in the time series, sampling cap
 beginning/early portion of spawning season, while later in the time series sampling has captured
 more of the peak in spawning. 
 
-Input data: [`YT_63_23_BTS.csv`](https://github.com/sgaichas/spawntiming/blob/main/YT_63_23_BTS.csv)
+2023 Input data: [`YT_63_23_BTS.csv`](https://github.com/sgaichas/spawntiming/blob/main/YT_63_23_BTS.csv)
+
+2024 Input data: [`YT_1963_2024_BTS.csv`](https://github.com/sgaichas/spawntiming/blob/main/YT_1963_2024_BTS.csv)
+
 
 Processing code: [`YT_Prop_Mat_by_temp_week_timeblocks_CC_WP.R`](https://github.com/sgaichas/spawntiming/blob/main/YT_Prop_Mat_by_temp_week_timeblocks_CC_WP.R)
 
@@ -378,7 +385,7 @@ I ran the code from lines 1:219 to get the datasets.
 
 #library(MASS)
 
-YTdata=as.data.frame(read.csv(file="YT_63_23_BTS.csv", header=T, sep=","))
+YTdata=as.data.frame(read.csv(file="YT_1963_2024_BTS.csv", header=T, sep=","))
 #Allspp_SPdata$mean[which(Allspp_SPdata$mean==0)] <- NA
 data=subset(YTdata[YTdata$SVSPP=='105',]) #select species
 
